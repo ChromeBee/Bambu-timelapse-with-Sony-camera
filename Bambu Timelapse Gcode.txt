@@ -1,19 +1,14 @@
 ; before layer change gcode
-G92 E0 ; set current extruder position as zero
-G1 E-[retraction_length] F1800 ; retract the filament by amount set in slicer
-G17 ; set XY plane
-G2 Z{layer_z + 0.4} I0.86 J0.86 P1 F20000 ; spiral lift a little
-G1 X65 Y245 F20000 ; move position just infront of Poop chute
-M400 P200 ; wait for move to complete
-G17 ; set XY plane
-G2 Z{layer_z} I0.86 J0.86 P1 F20000 ; spiral down
-G1 Y265 F3000 ; move back to be above poop chute
-M400 P200 ; wait for move to complete
+; none required
 
 ;=============================================
 
 ; layer change gcode
-G1 X65 Y245 F20000 ; move position just infront of Poop chute
+G92 E0 ; set current extruder position as zero
+G1 E-[retraction_length] F1800 ; retract the filament by amount set in slicer
+G17 ; set XY plane
+G2 Z{layer_z + 0.4} I0.86 J0.86 P1 F20000 ; spiral lift a little
+G1 X65 Y245 F20000 ; move position just in front of Poop chute
 M400 P200 ; wait for move to complete
 G17 ; set XY plane
 G2 Z{layer_z} I0.86 J0.86 P1 F20000 ; spiral down
@@ -50,16 +45,10 @@ M623
 M73 L{layer_num+1}
 M991 S0 P{layer_num} ;notify layer change
 ;
-; additional gcode to keep the head parked
-;
-G1 X65 Y245 F20000 ; move to just in front of poop chute
-M400 P200 ; wait for move to complete
-G17
-G1 Y265 F3000 ;move over poop chute
-M400 P300 ; wait for all moves to complete
+; additional gcode to wait for picture to be taken then undo parking of print head
 G4 P2000 ; wait 2 seconds for picture to be taken
 G92 E0 ; set current extruder position to zero
 G1 E[retraction_length] F300 ; undo earlier retract
-G1 X100 F5000 ; dump poop
+G1 X100 F5000 ; wipe nozzle
 G1 Y255 F20000 ; move forward
 m400 P200 ; wait for moves to complete before continuing
