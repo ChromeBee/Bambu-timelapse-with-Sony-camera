@@ -16,7 +16,7 @@ G1 Y265 F3000 ; move back to be above poop chute
 M400 P200 ; wait for move to complete
 ;
 ; pre existing gcode
-; - could remove duplicate instructions in timelapse with wipe tower section
+; - removed duplicate instructions in timelapse with wipe tower section
 ;
 ; layer num/total_layer_count: {layer_num+1}/[total_layer_count]
 M622.1 S1 ; for prev firware, default turned on
@@ -25,20 +25,20 @@ M622 J1
 {if timelapse_type == 0} ; timelapse without wipe tower
 M971 S11 C10 O0
 {elsif timelapse_type == 1} ; timelapse with wipe tower
-G92 E0
-G1 E-[retraction_length] F1800
-G17
-G2 Z{layer_z + 0.4} I0.86 J0.86 P1 F20000 ; spiral lift a little
+;G92 E0
+;G1 E-[retraction_length] F1800
+;G17
+;G2 Z{layer_z + 0.4} I0.86 J0.86 P1 F20000 ; spiral lift a little
 G1 X65 Y245 F20000 ; move to safe pos
-G17
-G2 Z{layer_z} I0.86 J0.86 P1 F20000
-G1 Y265 F3000
-M400 P300
-M971 S11 C10 O0
-G92 E0
-G1 E[retraction_length] F300
-G1 X100 F5000
-G1 Y255 F20000
+;G17
+;G2 Z{layer_z} I0.86 J0.86 P1 F20000
+;G1 Y265 F3000
+;M400 P300
+;M971 S11 C10 O0
+;G92 E0
+;G1 E[retraction_length] F300
+;G1 X100 F5000
+;G1 Y255 F20000
 {endif}
 M623
 ; update layer progress
@@ -46,7 +46,7 @@ M73 L{layer_num+1}
 M991 S0 P{layer_num} ;notify layer change
 ;
 ; additional gcode to wait for picture to be taken then undo parking of print head
-G4 P2000 ; wait 2 seconds for picture to be taken
+G4 P3000 ; wait 3 seconds for picture to be taken - 2 is enough for the action camera but the Sony is sometimes slow
 G92 E0 ; set current extruder position to zero
 G1 E[retraction_length] F300 ; undo earlier retract
 G1 X100 F5000 ; wipe nozzle
