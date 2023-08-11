@@ -2,6 +2,7 @@
 // It then checks for changes to the values of stg_cur and layer_num to determine if a timelapse photo should be taken
 // by John Crombie 
 // August 2023
+// 10-Aug=2023 - added code to handle a servo operated shutter button and giving the device a name based on its IP address
 
 #include "Arduino.h"
 #include "ESP8266WiFi.h"
@@ -10,9 +11,14 @@
 #include "WiFiUdp.h"
 #include "ArduinoJson.h"
 
+#include <Servo.h>
+
 #define ShutterOutput D6
 #define STATUS_LED D7 // shows connection to Bambu
-
+// #define ServoOutput D5 // servo output that presses the shutter ; comment out this #define to exclude all servo code
+#ifdef ServoOutput
+#define TestButton D8 // pull to ground to trigger servo to take a photo. Used to check servo movements
+#endif
 
 // global constants
 const char* ssid = "WiFi_SSID"; // Home WiFi SSID
@@ -22,6 +28,10 @@ const uint16_t mqtt_server_port = 8883;  // default MQTT port of Bambu printers
 const char* BambuSN = "Serial_Number"; // Bambu printer serial number
 const char* BambuLANcode = "Lan_Code";  // Bambu printer LAN access code (password)
 const char* BambuUsername = "bblp"; // default Bambu printer username
+#ifdef ServoOutput
+const int maxServoMovement = 15; // amount of movement in degrees needed to take a picture. Can be positive or negative number
+const int midPos = 90;
+#endif
 
 // global variables
 char DeviceName[20];
@@ -37,6 +47,9 @@ bool stg_cur_change = false;
 bool layer_num_change = false;
 bool take_photo = false;
 bool bambuConnected = false;
+#ifdef ServoOutput
+Servo cameraServo;
+#endif
 
 
 WiFiClientSecure wifiClient;
@@ -107,6 +120,9 @@ void ICACHE_RAM_ATTR callback(char* topic, byte* payload, unsigned int length) {
     
     // update old values to current values
     if (par_change) {
+      Serial.println(F("===== JSON Data ====="));
+      serializeJsonPretty(doc, Serial);
+      Serial.println(F("======================"));
       Serial.print("Previous_stg_cur : ");
       Serial.print(Previous_stg_cur);
       Serial.print(", Current stg_cur : ");
@@ -147,9 +163,26 @@ void setup_wifi() {
 
 // Connect to MQTT server
 void connect() {
+  IPAddress localIP;
+  char lastNumber[5];
+  uint8_t to_convert;
+
    while (!mqttClient.connected()) {
     Serial.print("Attempting MQTT connection...");
-    strcpy(DeviceName,"ESP8266MQTT");
+
+    localIP = WiFi.localIP();
+    strcpy(DeviceName,"BCamCon-");
+    Serial.print("IP Address : ");
+    Serial.println(localIP);
+    Serial.print(" to append ");
+    Serial.println(localIP[3]);
+    to_convert = localIP[3];
+    lastNumber[0] = (to_convert/100) +48;  // hundreds digit
+    lastNumber[1] = (to_convert/10 - 10*(to_convert/100)) +48; //tens digit
+    lastNumber[2] = (to_convert - 10*(to_convert/10)) +48;  // unit digit
+    lastNumber[3] = '\0';  // terminate array
+    strcat (DeviceName,lastNumber);
+
     Serial.print("ClientID : ");
     Serial.println(DeviceName);
     Serial.print("Username : ");
@@ -167,6 +200,13 @@ void connect() {
     }
    }
   }
+
+#ifdef ServoOutput
+void ICACHE_RAM_ATTR button_pulleddown()  // Interrupt handler for test button to test servo movement
+{
+  take_photo = true;
+}
+#endif
 
 
  void setup() {
@@ -189,6 +229,12 @@ void connect() {
   digitalWrite(ShutterOutput, HIGH); // Don't take photo
   digitalWrite(STATUS_LED, LOW); // not connected
 
+  #ifdef ServoOutput
+  cameraServo.attach(ServoOutput);
+  cameraServo.write(midPos);
+  pinMode(TestButton,INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(TestButton), button_pulleddown, FALLING);  // interrupt routine for testing servo movement
+  #endif
 }
 
 void loop() {
@@ -204,12 +250,18 @@ void loop() {
    }
   if (take_photo) {
     digitalWrite(ShutterOutput, LOW); // take photo
+    #ifdef ServoOutput
+    cameraServo.write(midPos+maxServoMovement);
+    #endif
     // delay 200ms to give camera control ESP time to react
     shutterDelay = millis();
     while (millis() - shutterDelay < 200) {
       yield();
     }
     digitalWrite(ShutterOutput, HIGH); // back to normal state
+    #ifdef ServoOutput
+    cameraServo.write(midPos);
+    #endif
     take_photo = false;  
   }
   mqttClient.loop();
