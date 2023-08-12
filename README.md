@@ -14,3 +14,10 @@ I wrote a simple MQTT client that connects to my home WiFi and then connects and
 To control the camera I have used by Reinhard Nickels that allows WiFi control of a Sony camera from a secon ESP8266. As I have a Sony RX100 M5 it was too good not to try. here is a link to [Reinhard’s site](https://glaskugelsehen.wordpress.com/2016/01/08/sony-camera-remote-control-mit-esp8266/) 
 .
 So this is my solution two ESP8266s, one determining when to take the photo and the other controlling the camera. The camera code is mostly what Reinhard had written with the addition of a new interrupt routine to handle the input from the other ESP and the addition of a status LED to show when the ESP is connected to the cameras WiFi.
+
+Demo of the code in action at https://youtu.be/qvjMZTnUbnw
+
+Code updated 11-Aug-2023
+I have now added code to control a servo to press the shutter button of a camera if needed. The code is conditional based on the ServoOutput pin being defined. In the uploaded version of the code it is commented out. As the device connecting to the Bambu MQTT server needs a unique name I have also added code to do this by adding the the last digit of the devices IP address to the end of a fixed device name.
+
+Demo of the resulting code in action at https://www.youtube.com/watch?v=phjiie5QoyQ
